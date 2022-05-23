@@ -1399,7 +1399,14 @@ void OgHttp2Session::OnHeaders(spdy::SpdyStreamId stream_id,
 void OgHttp2Session::OnWindowUpdate(spdy::SpdyStreamId stream_id,
                                     int delta_window_size) {
   if (stream_id == 0) {
-    connection_send_window_ += delta_window_size;
+    // Prevent overflow by limitting the connection_send_window_ to the max number it can be.
+    const int64_t new_window_size = static_cast<int64_t>(connection_send_window_) + delta_window_size;
+    constexpr int64_t max_window_size = (1l << 31) - 1;
+    if (new_window_size < max_window_size) {
+      connection_send_window_ = new_window_size;
+    } else {
+      connection_send_window_ = static_cast<int32_t>(max_window_size);
+    }
   } else {
     auto it = stream_map_.find(stream_id);
     if (it == stream_map_.end()) {
