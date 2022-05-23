@@ -831,6 +831,8 @@ OgHttp2Session::SendResult OgHttp2Session::WriteForStream(
       // to send, or trailers require an explicit end_data before being sent.
       state.data_deferred = true;
       break;
+    } else if (length > spdy::kHttp2DefaultFramePayloadLimit) {
+      return SendResult::SEND_ERROR;
     } else if (length == DataFrameSource::kError) {
       // TODO(birenroy): Consider queuing a RST_STREAM INTERNAL_ERROR instead.
       CloseStream(stream_id, Http2ErrorCode::INTERNAL_ERROR);
