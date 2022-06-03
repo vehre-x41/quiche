@@ -1219,7 +1219,8 @@ void OgHttp2Session::OnSettings() {
 void OgHttp2Session::OnSetting(spdy::SpdySettingsId id, uint32_t value) {
   switch (id) {
     case MAX_FRAME_SIZE:
-      max_frame_payload_ = value;
+      // Exclude 0 because that can produce endless loop.
+      max_frame_payload_ = std::max(1u, value);
       break;
     case MAX_CONCURRENT_STREAMS:
       max_outbound_concurrent_streams_ = value;
