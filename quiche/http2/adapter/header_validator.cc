@@ -28,6 +28,9 @@ const absl::string_view kValidAuthorityChars =
     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~%!$&'()["
     "]*+,;=:";
 
+const absl::string_view kValidSchemeChars =
+    "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+-.";
+
 using CharMap = std::array<bool, 256>;
 
 CharMap BuildValidCharMap(absl::string_view valid_chars) {
@@ -125,6 +128,11 @@ bool ValidateResponseTrailers(const std::vector<std::string>& pseudo_headers) {
   return pseudo_headers.empty();
 }
 
+bool ValidateScheme(const absl::string_view& scheme) {
+  static const CharMap valid_chars = BuildValidCharMap(kValidSchemeChars);
+  return !scheme.empty() && AllCharsInMap(scheme, valid_chars);
+}
+
 }  // namespace
 
 void HeaderValidator::StartHeaderBlock() {
@@ -179,6 +187,8 @@ HeaderValidator::HeaderStatus HeaderValidator::ValidateSingleHeader(
         return HEADER_FIELD_INVALID;
       }
       path_ = std::string(value);
+    } else if (key == ":scheme" && !ValidateScheme(value)) {
+      return HEADER_FIELD_INVALID;
     }
     pseudo_headers_.push_back(std::string(key));
   } else if (key == "host") {
